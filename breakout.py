@@ -19,8 +19,9 @@ class Breakout:
         self.paddle = Paddle(self.max_width//2, self.max_height - 2, 10 ,stdscr)
         self.ball = Ball(self.max_width // 2, self.max_height // 2, stdscr)
         self.block = Block(stdscr)
+        self.block_width = 10
 
-        self.grid_width = self.max_width // 5
+        self.grid_width = self.max_width // self.block_width
         self.grid_height = 4
         self.grid = [[0 for _ in range(self.grid_width)] for _ in range(self.grid_height)]
 
@@ -48,9 +49,9 @@ class Breakout:
         '''
         for i in range(len(self.grid)):
             for j in range(len(self.grid[i])):
-                x = j * 5
-                y = i * 2
-                self.block.draw(x,y,)    
+                x = j * (self.block_width+2)
+                y = i * 4
+                self.block.draw(x,y,self.block_width)    
                     
     def check_collision(self):
         '''
@@ -93,10 +94,16 @@ class Block:
     def __init__(self,stdscr):
         self.stdscr = stdscr
 
-    def draw(self,x,y):
-        for i in range(3):
-            self.stdscr.addch(y, x + i, curses.ACS_BLOCK)
-        self.stdscr.addstr(y, x + 4, ' ')
+    def draw(self, x, y, block_width):
+        max_height, max_width = self.stdscr.getmaxyx()
+        for i in range(2):  # Block height
+            for j in range(block_width):  # Block width
+                # Check if the position is within screen bounds
+                if 0 <= y + (i - 1) < max_height and 0 <= x + j < max_width:
+                    try:
+                        self.stdscr.addch(y + (i - 1), x + j, curses.ACS_BLOCK)
+                    except curses.error:
+                        pass  # Ignore errors to prevent crashing
 
 
 class Paddle:
