@@ -4,6 +4,8 @@
 # Author: Michael
 # ----------------------------------------------------
 import curses
+import time
+from objects import *
 
 
 class Breakout:
@@ -33,6 +35,9 @@ class Breakout:
         self.grid = [
             [0 for _ in range(self.grid_width)] for _ in range(self.grid_height)
         ]
+        
+        #Initalize time variable
+        self.current_time = time.time()
 
     def draw_paddle(self):
         """
@@ -58,7 +63,7 @@ class Breakout:
             self.ball.move_right()
         elif self.ball.xvelocity < 0:
             self.ball.move_left()
-
+        
         self.ball.draw(self.stdscr)
 
     def draw_blocks(self):
@@ -73,16 +78,28 @@ class Breakout:
                 y = i * 4
                 self.block.draw(x, y, self.block_width)
 
+
+
     def check_collision(self):
         """
         Checks collision between ball, paddle, brick
         Inputs: None
         Returns: None
         """
+        # Screen Side Collision
         if self.ball.x == 0 or self.ball.x == self.max_width - 2:
             self.ball.xvelocity *= -1
         if self.ball.y == 0 or self.ball.y == self.max_height - 1:
             self.ball.yvelocity *= -1
+
+        # Paddle Collision
+        if self.ball.y == self.paddle.y - 1:
+            for i in range(self.paddle_size):
+                if (
+                    self.ball.x <= self.paddle.x + i
+                    and self.ball.y == self.paddle.y + 1
+                ):
+                    self.ball.yvelocity *= -1
 
     def run(self):
         """
@@ -90,15 +107,12 @@ class Breakout:
         Inputs: None
         Returns: None
         """
-        self.draw_paddle()
-        self.draw_ball()
-        self.draw_blocks()
-
-        self.stdscr.refresh()
-
+        self.stdscr.nodelay(True)
+        
         while True:
             key = self.stdscr.getch()
 
+            # Paddle Movement
             if key == curses.KEY_LEFT or key == ord("h"):
                 self.paddle.move_left()
             elif key == curses.KEY_RIGHT or key == ord("l"):
@@ -106,81 +120,20 @@ class Breakout:
             elif key == ord("q"):
                 break
 
-            self.check_collision()
-            self.draw_blocks()
-            self.stdscr.clear()
-            self.draw_paddle()
-            self.draw_ball()
-            self.draw_blocks()
-            self.stdscr.refresh()
+            # Time-based Game Logic
+            if time.time() - self.current_time > 1/30:
+                self.stdscr.clear()  # Clear the screen once
+                self.check_collision()  # Handle ball collisions
+                
+                # Redraw game components
+                self.draw_paddle()
+                self.draw_ball()
+                self.draw_blocks()
+                
+                self.stdscr.refresh()  # Refresh the screen after all draws
 
-
-class Block:
-    def __init__(self, stdscr):
-        self.stdscr = stdscr
-
-    def draw(self, x, y, block_width):
-        max_height, max_width = self.stdscr.getmaxyx()
-        for i in range(2):
-            for j in range(block_width):
-                if 0 <= y + (i - 1) < max_height and 0 <= x + j < max_width:
-                    try:
-                        self.stdscr.addch(y + (i - 1), x + j, curses.ACS_BLOCK)
-                    except curses.error:
-                        pass
-
-
-class Paddle:
-    def __init__(self, x, y, width, stdscr):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.max_height, self.max_width = stdscr.getmaxyx()
-
-    def draw(self, stdscr):
-        for i in range(self.width):
-            if self.x + i < self.max_width:
-                stdscr.addch(self.y, self.x + i, curses.ACS_CKBOARD)
-
-    def move_left(self):
-        if self.x > 0:
-            self.x -= 3
-
-    def move_right(self):
-        if self.x + self.width < self.max_width:
-            self.x += 3
-
-
-class Ball:
-    def __init__(self, x, y, velocity, stdscr):
-        self.x = x
-        self.y = y
-        self.velocity = velocity
-
-        # ball velocities
-        self.xvelocity = 1
-        self.yvelocity = -1
-
-        self.max_height, self.max_width = stdscr.getmaxyx()
-
-    def draw(self, stdscr):
-        stdscr.addch(self.y, self.x, ord("o"))
-
-    def move_up(self):
-        if self.y != 0:
-            self.y -= 1
-
-    def move_down(self):
-        if self.y < self.max_height - 1:
-            self.y += 1
-
-    def move_left(self):
-        if self.x != 0:
-            self.x -= 1
-
-    def move_right(self):
-        if self.x <= self.max_width:
-            self.x += 1
+                # Reset the timer
+                self.current_time = time.time()
 
 
 def main(stdscr):
