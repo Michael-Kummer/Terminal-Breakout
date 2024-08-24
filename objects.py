@@ -5,6 +5,8 @@ Block:
     - Create a map in dictionary for each block + status
     - Map is actively edited by breakout.check_collision during runtime
     - Draw blocks
+    - [block #] = {[active_state,ycoord,xcoord1,xcoord2,xcoord3,xcoord4]}
+
 
 Paddle:
     - Moves paddle left and right.
@@ -18,6 +20,7 @@ Ball:
 
 import curses
 
+
 class Block:
     def __init__(self, stdscr):
         self.stdscr = stdscr
@@ -28,13 +31,21 @@ class Block:
         self.spawn_map()
 
     def spawn_map(self):
-        blockxcount = self.max_width // (self.block_width + 2)
-        blockycount = 4
+        """
+        [key] = {value_list}
+        [block #] = {[active_state,ycoord,xcoord1,xcoord2,xcoord3,xcoord4]}
+        This is mapped out for every block
+        """
+        block_per_row = self.max_width // (self.block_width + 2)
+        block_rows = 4
 
-        for j in range(blockycount):
-            for i in range(blockxcount):
-                blocknumber = (j * (i - 1)) + i
-                self.map[blocknumber] = 1  # Use 1 to mark active blocks
+        for row in range(block_rows):
+            x_pointer = 1
+            for col in range(block_per_row):
+                blocknumber = row *block_per_row + col
+                self.map[blocknumber] = [1, row*2, x_pointer, x_pointer+1, x_pointer+2, x_pointer+3]
+                x_pointer +=4
+
 
     def draw(self, x, y, block_width):
         """
@@ -42,13 +53,15 @@ class Block:
         Inputs: block x pointer, block y pointer, block width
         """
         for blocknumber in self.map.keys():
-            if self.map[blocknumber] == 1:  # Check if block is active
+            if self.map[blocknumber][0] == 1:  # Check if block is active
                 for j in range(block_width):
                     if 0 <= y < self.max_height and 0 <= x + j < self.max_width:
                         try:
                             self.stdscr.addch(y, x + j, "█")
                         except curses.error:
                             pass
+
+
 class Paddle:
     def __init__(self, x, y, width, stdscr):
         self.x = x
@@ -77,7 +90,7 @@ class Ball:
         self.y = y
         self.velocity = velocity
 
-        # ball velocities
+        # Ball velocities
         self.xvelocity = 1
         self.yvelocity = -1
 
